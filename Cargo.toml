@@ -1,0 +1,30 @@
+[package]
+name = "rocket_macros"
+version = "0.0.1"
+authors = ["Young Wu <doomsplayer@gmail.com>"]
+description = "Code generation for the Rocket web framework using proc_macro."
+documentation = "http://wooya.me/rocket_macros/"
+homepage = "https://rocket.rs"
+repository = "https://github.com/doomsplayer/rocket_macros"
+#readme = "README.md"
+keywords = ["rocket", "web", "framework", "code", "generation", "macro"]
+license = "MIT/Apache-2.0"
+build = "build.rs"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+rocket = { version = "0.1.6" }
+log = "^0.3"
+syn = { version = "0.11", features = ["full", "parsing", "printing"] }
+quote = "0.3"
+error-chain = "0.8"
+result = "*"
+
+[dev-dependencies]
+compiletest_rs = "0.2"
+
+[build-dependencies]
+ansi_term = "0.9"
+version_check = "0.1"
