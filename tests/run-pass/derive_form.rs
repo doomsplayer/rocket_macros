@@ -1,20 +1,22 @@
-#![feature(plugin, custom_derive)]
-#![plugin(rocket_codegen)]
-
+#![feature(proc_macro)]
 extern crate rocket;
+#[macro_use]
+extern crate rocket_macros;
 
 use rocket::request::{FromForm, FromFormValue};
 
 #[derive(Debug, PartialEq, FromForm)]
 struct TodoTask {
     description: String,
-    completed: bool
+    completed: bool,
 }
 
 // TODO: Make deriving `FromForm` for this enum possible.
 #[derive(Debug, PartialEq)]
 enum FormOption {
-    A, B, C
+    A,
+    B,
+    C,
 }
 
 impl<'v> FromFormValue<'v> for FormOption {
@@ -25,7 +27,7 @@ impl<'v> FromFormValue<'v> for FormOption {
             "a" => FormOption::A,
             "b" => FormOption::B,
             "c" => FormOption::C,
-            _ => return Err(v)
+            _ => return Err(v),
         };
 
         Ok(variant)
@@ -50,16 +52,17 @@ struct DefaultInput<'r> {
 #[derive(Debug, PartialEq, FromForm)]
 struct ManualMethod<'r> {
     _method: Option<&'r str>,
-    done: bool
+    done: bool,
 }
 
 fn main() {
     // Same number of arguments: simple case.
     let task = TodoTask::from_form_string("description=Hello&completed=on");
-    assert_eq!(task, Ok(TodoTask {
-        description: "Hello".to_string(),
-        completed: true
-    }));
+    assert_eq!(task,
+               Ok(TodoTask {
+                   description: "Hello".to_string(),
+                   completed: true,
+               }));
 
     // Argument in string but not in form.
     let task = TodoTask::from_form_string("other=a&description=Hello&completed=on");
@@ -67,43 +70,50 @@ fn main() {
 
     // Ensure _method isn't required.
     let task = TodoTask::from_form_string("_method=patch&description=Hello&completed=off");
-    assert_eq!(task, Ok(TodoTask {
-        description: "Hello".to_string(),
-        completed: false
-    }));
+    assert_eq!(task,
+               Ok(TodoTask {
+                   description: "Hello".to_string(),
+                   completed: false,
+               }));
 
-    let form_string = &[
-        "password=testing", "checkbox=off", "checkbox=on", "number=10",
-        "checkbox=off", "textarea=", "select=a", "radio=c",
-    ].join("&");
+    let form_string = &["password=testing",
+                        "checkbox=off",
+                        "checkbox=on",
+                        "number=10",
+                        "checkbox=off",
+                        "textarea=",
+                        "select=a",
+                        "radio=c"]
+        .join("&");
 
     let input = FormInput::from_form_string(&form_string);
-    assert_eq!(input, Ok(FormInput {
-        checkbox: false,
-        number: 10,
-        radio: FormOption::C,
-        password: "testing",
-        textarea: "".to_string(),
-        select: FormOption::A,
-    }));
+    assert_eq!(input,
+               Ok(FormInput {
+                   checkbox: false,
+                   number: 10,
+                   radio: FormOption::C,
+                   password: "testing",
+                   textarea: "".to_string(),
+                   select: FormOption::A,
+               }));
 
     // Argument not in string with default in form.
     let default = DefaultInput::from_form_string("");
-    assert_eq!(default, Ok(DefaultInput {
-        arg: None
-    }));
+    assert_eq!(default, Ok(DefaultInput { arg: None }));
 
     // Ensure _method can be captured if desired.
     let manual = ManualMethod::from_form_string("_method=put&done=true");
-    assert_eq!(manual, Ok(ManualMethod {
-        _method: Some("put"),
-        done: true
-    }));
+    assert_eq!(manual,
+               Ok(ManualMethod {
+                   _method: Some("put"),
+                   done: true,
+               }));
 
     // And ignored when not present.
     let manual = ManualMethod::from_form_string("done=true");
-    assert_eq!(manual, Ok(ManualMethod {
-        _method: None,
-        done: true
-    }));
+    assert_eq!(manual,
+               Ok(ManualMethod {
+                   _method: None,
+                   done: true,
+               }));
 }

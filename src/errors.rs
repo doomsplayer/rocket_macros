@@ -103,5 +103,13 @@ error_chain! {
       description("error handle has too much param")
       display("error handle can only have 2 param at most")
     }
+    ErrorHandleContainSelf {
+      description("error handle contains self param")
+      display("error handle for #[error(code)] can not have self parameter")
+    }
+    ErrorHandleUnexpectedParam {
+      description("error handle has unexpected param")
+      display("error handle for #[error(code)] has unexpected argument")
+    }
   }
 }

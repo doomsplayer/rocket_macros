@@ -112,9 +112,7 @@ use proc_macro::TokenStream;
 
 const PARAM_PREFIX: &'static str = "rocket_param_";
 const ROUTE_STRUCT_PREFIX: &'static str = "static_rocket_route_info_for_";
-const CATCH_STRUCT_PREFIX: &'static str = "static_rocket_catch_info_for_";
 const ROUTE_FN_PREFIX: &'static str = "rocket_route_fn_";
-const CATCH_FN_PREFIX: &'static str = "rocket_catch_fn_";
 
 macro_rules! export_decorators {
     ($($name:ident => $func:ident),+) => (
@@ -125,7 +123,7 @@ macro_rules! export_decorators {
                     Ok(ts) => ts,
                     Err(e) => panic!("{}", e),
                 };
-                debug!("{} decorator output: {}", stringify!($name), result);
+                println!("{} decorator output: {}", stringify!($name), result);
                 result
             }
          )+
@@ -155,7 +153,6 @@ pub fn from_form(input: TokenStream) -> TokenStream {
     debug!("FromForm output: {}", result);
     result
 }
-
 
 // macro_rules! register_derives {
 //     ($registry:expr, $($name:expr => $func:ident),+) => (

@@ -38,6 +38,14 @@ pub fn from_form_derive(input: TokenStream) -> Result<TokenStream> {
         generics.lifetimes[0].clone()
     };
 
+    let impl_generics = if generics.lifetimes.len() == 0 {
+        let mut generics = generics.clone();
+        generics.lifetimes.push(lifetime.clone());
+        generics
+    } else {
+        generics.clone()
+    };
+
     let (mut pres, mut matches, mut failure_conditions, mut result_fields) =
         (vec![], vec![], vec![], vec![]);
     for field in struct_fields {
@@ -51,7 +59,7 @@ pub fn from_form_derive(input: TokenStream) -> Result<TokenStream> {
     let return_err_stmt = quote! { return Err(::rocket::Error::BadParse) };
     // The error type in the derived implementation.
     let tokens = quote! {
-        impl #generics ::rocket::request::FromForm<#lifetime> for #struct_name_ident #generics {
+        impl #impl_generics ::rocket::request::FromForm<#lifetime> for #struct_name_ident #generics {
             type Error = ::rocket::Error;
             fn from_form_string(form_string: &#lifetime str) -> Result<Self, Self::Error> {
                 #(#pres);*
@@ -87,6 +95,7 @@ fn from_form_derive_field(field: &Field) -> (Tokens, Tokens, Tokens, Tokens) {
     let ty = field.ty.strip_lifetime();
     let ident = field.ident.clone().unwrap();
     let ident_name = ident.to_string();
+
     // Generate the let bindings for parameters that will be unwrapped and
     // placed into the final struct. They start out as `None` and are changed
     // to Some when a parse completes, or some default value if the parse was

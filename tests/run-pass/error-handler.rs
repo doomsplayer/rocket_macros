@@ -6,27 +6,27 @@ use rocket::{Error, Request};
 use rocket_macros::error;
 
 #[error(404)]
-fn err0() -> &'static str {
+pub fn err0() -> &'static str {
     "hi"
 }
 
 #[error(404)]
-fn err1a(_err: Error) -> &'static str {
+pub fn err1a(_err: Error) -> &'static str {
     "hi"
 }
 
 #[error(404)]
-fn err1b(_req: &Request) -> &'static str {
+pub fn err1b(_req: &Request) -> &'static str {
     "hi"
 }
 
 #[error(404)]
-fn err2a(_err: Error, _req: &Request) -> &'static str {
+pub fn err2a(_err: Error, _req: &Request) -> &'static str {
     "hi"
 }
 
 #[error(404)]
-fn err2b<'a>(_err: Error, _req: &'a Request) -> &'a str {
+pub fn err2b<'a>(_err: Error, _req: &'a Request) -> &'a str {
     "hi"
 }
 

@@ -48,7 +48,11 @@ method_decorator!(patch_decorator, Patch);
 // FIXME: Compilation fails when parameters have the same name as the function!
 fn generic_route_decorator(router_def: RouterDef) -> Result<TokenStream> {
     let func = router_def.item.clone();
-    let fn_arguments = router_def.fn_decl()?.arg_name_idents();
+    let fn_arg_name_idents: Vec<_> = router_def.fn_decl()?
+        .arg_names()
+        .into_iter()
+        .map(|i: String| Ident::new(PARAM_PREFIX.to_string() + &i))
+        .collect();
     let param_statements = generate_param_statements(&router_def)?;
     let data_statement = generate_data_statement(&router_def)?;
     let query_statement = generate_query_statement(&router_def)?;
@@ -77,7 +81,7 @@ fn generic_route_decorator(router_def: RouterDef) -> Result<TokenStream> {
              #param_statements
              #query_statement
              #data_statement
-             let responder = #user_fn_ident(#(#fn_arguments),*);
+             let responder = #user_fn_ident(#(#fn_arg_name_idents),*);
              ::rocket::handler::Outcome::of(responder)
         }
 

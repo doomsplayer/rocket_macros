@@ -1,7 +1,6 @@
-use syn::{Expr, ExprKind, FnArg, FnDecl, Ident, Item, ItemKind, Lit, Pat, Ty};
+use syn::{Expr, ExprKind, FnArg, FnDecl, Item, ItemKind, Lit, Pat, Ty};
 use errors::*;
 use errors::ErrorKind::*;
-use ::PARAM_PREFIX;
 
 pub trait ExprExt {
     fn path_string(&self) -> Result<String>;
@@ -83,7 +82,7 @@ impl KV for Expr {
 
 pub trait FnDeclExt {
     fn find_input_ty(&self, name: &str) -> Option<&Ty>;
-    fn arg_name_idents(&self) -> Vec<Ident>;
+    fn arg_names(&self) -> Vec<String>;
 }
 
 impl FnDeclExt for FnDecl {
@@ -103,7 +102,7 @@ impl FnDeclExt for FnDecl {
         }
         None
     }
-    fn arg_name_idents(&self) -> Vec<Ident> {
+    fn arg_names(&self) -> Vec<String> {
         self.inputs
             .iter()
             .map(|arg| {
@@ -113,9 +112,7 @@ impl FnDeclExt for FnDecl {
                     _ => panic!(""),
                 };
                 match pat {
-                    &Pat::Ident(_, ref ident, ..) => {
-                        Ident::new(PARAM_PREFIX.to_string() + &ident.to_string())
-                    }
+                    &Pat::Ident(_, ref ident, ..) => ident.to_string(),
                     _ => panic!(""),
                 }
             })

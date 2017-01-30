@@ -1,7 +1,5 @@
-use ::{CATCH_STRUCT_PREFIX, CATCH_FN_PREFIX};
-
 use proc_macro::TokenStream;
-use syn::{ExprKind, Ident};
+use syn::{ExprKind, FnArg, Ident, Ty};
 use syn::{parse_expr, parse_item};
 
 use errors::*;
@@ -16,7 +14,7 @@ pub fn error_decorator(args: TokenStream, item: TokenStream) -> Result<TokenStre
     let code = match expr.node {
         ExprKind::Paren(expr) => {
             match expr.node {
-                ExprKind::Lit(lit) => lit.as_isize()?,
+                ExprKind::Lit(lit) => lit.as_isize()? as u16,
                 _ => bail!(ErrorCodeNotInteger),
             }
         }
@@ -24,41 +22,59 @@ pub fn error_decorator(args: TokenStream, item: TokenStream) -> Result<TokenStre
     };
 
     let func = parse_item(&item.to_string()).unwrap();
-    let user_fn_name = func.ident.to_string();
 
-    let catch_fn_ident = Ident::new(CATCH_FN_PREFIX.to_string() + &user_fn_name);
-    let struct_ident = Ident::new(CATCH_STRUCT_PREFIX.to_string() + &user_fn_name);
-    let user_fn_ident = Ident::new(user_fn_name);
+    let fn_name = func.ident.to_string();
+    let fn_vis = func.vis.clone();
+
+    let fn_ident = Ident::new(fn_name);
+
     let err_param_ident = Ident::new(ERR_PARAM);
     let req_param_ident = Ident::new(REQ_PARAM);
 
-    let fndecl = func.fn_decl()?;
-
-    let input_names = fndecl.arg_name_idents();
-
-    if input_names.len() > 2 {
+    let fn_decl = func.fn_decl()?;
+    if fn_decl.inputs.len() > 2 {
         bail!(ErrorHandleTooMuchParam);
+    }
+    let mut input_name_idents = vec![];
+    for fn_arg in &fn_decl.inputs {
+        let ident = match fn_arg {
+            &FnArg::Captured(_, ref ty) => {
+                match ty {
+                    &Ty::Rptr(..) => req_param_ident.clone(),
+                    &Ty::Path(..) => err_param_ident.clone(),
+                    _ => bail!(ErrorHandleUnexpectedParam),
+                }
+            }
+            &FnArg::Ignored(ref ty) => {
+                match ty {
+                    &Ty::Rptr(..) => req_param_ident.clone(),
+                    &Ty::Path(..) => err_param_ident.clone(),
+                    _ => bail!(ErrorHandleUnexpectedParam),
+                }
+            }
+            _ => bail!(ErrorHandleContainSelf),
+        };
+        input_name_idents.push(ident);
     }
 
     let out = quote! {
-        
-        #func
-           
-        fn #catch_fn_ident<'_b>(#err_param_ident: ::rocket::Error,
-                                #req_param_ident: &'_b ::rocket::Request)
-                               -> ::rocket::response::Result<'_b> {
-            let user_response = #user_fn_ident(#(#input_names),*);
-            let response = ::rocket::response::Responder::respond(user_response)?;
-            let status = ::rocket::http::Status::raw(#code as u16);
-            ::rocket::response::Response::build().status(status).merge(response).ok()
-        }
 
-        #[allow(non_upper_case_globals)]
-        pub static #struct_ident: ::rocket::StaticCatchInfo =
-            ::rocket::StaticCatchInfo {
-                code: #code as u16,
-                handler: #catch_fn_ident
-            };
+        #[allow(non_camel_case_types)]
+        #fn_vis struct #fn_ident;
+     
+        impl #fn_ident {
+            #fn_vis fn code() -> u16 { #code }
+            #fn_vis fn handler<'_a>(#err_param_ident: ::rocket::Error,
+                                    #req_param_ident: &'_a ::rocket::Request) -> ::rocket::response::Result<'_a> {
+
+                #func
+                        
+                let user_response = #fn_ident(#(#input_name_idents),*);
+                let response = ::rocket::response::Responder::respond(user_response)?;
+                let status = ::rocket::http::Status::raw(#code);
+                ::rocket::response::Response::build().status(status).merge(response).ok()
+            }
+        }
     };
     Ok(out.parse().unwrap())
 }
