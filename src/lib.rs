@@ -107,6 +107,7 @@ extern crate result;
 mod errors;
 mod utils;
 mod decorators;
+mod macros;
 
 use proc_macro::TokenStream;
 
@@ -143,6 +144,15 @@ export_decorators!(
     // "options" => options_decorator
 );
 
+#[proc_macro]
+pub fn routes(input: TokenStream) -> TokenStream {
+    macros::routes_macro(input)
+}
+
+#[proc_macro]
+pub fn errors(input: TokenStream) -> TokenStream {
+    macros::errors_macro(input)
+}
 
 #[proc_macro_derive(FromForm)]
 pub fn from_form(input: TokenStream) -> TokenStream {
