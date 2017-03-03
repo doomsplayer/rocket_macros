@@ -64,7 +64,7 @@ pub fn errors(ecx: &mut ExtCtxt, sp: Span, args: &[TokenTree])
 }
 */
 
-fn get_list_static_routes(input: Vec<TokenTree>) -> Vec<String> {
+fn get_list_static_path(input: Vec<TokenTree>, prefix: &str) -> Vec<String> {
     let mut path : String = String::default();
     let mut current    = String::default();
     let mut static_routes = vec![];
@@ -91,7 +91,7 @@ fn get_list_static_routes(input: Vec<TokenTree>) -> Vec<String> {
                 println!("Debug: routes::token::modsep {}", path);
             },
             Token::Comma => {
-                let x = format!("{}{}", ROUTE_STRUCT_PREFIX, current);
+                let x = format!("{}{}", prefix, current);
                 if path.is_empty() {
                     static_routes.push(x);
                 } else {
@@ -107,7 +107,7 @@ fn get_list_static_routes(input: Vec<TokenTree>) -> Vec<String> {
     }   
 
     if !current.is_empty() {
-        let x = format!("{}{}", ROUTE_STRUCT_PREFIX, current);
+        let x = format!("{}{}", prefix, current);
         if path.is_empty() {
             static_routes.push(x);
         } else {
@@ -125,13 +125,42 @@ pub fn routes_macro(input: TokenStream) -> TokenStream {
     let tt = parse_token_trees(&input)
         .unwrap();
 
-    let static_routes = get_list_static_routes(tt);
-    let q = static_routes.into_iter().map(quote::Ident::from).collect::<Vec<_>>();
+    let static_routes = get_list_static_path(tt, ROUTE_STRUCT_PREFIX);
+    let q = static_routes.into_iter()
+        .map(quote::Ident::from)
+        .map(|x| {
+            quote! {
+                v.push((&#x).into());
+            }
+        });
 
     let out = quote! {
         {
             let mut v = Vec::new();
-            #(v.push((&#q).into());)*
+            #(#q)*
+            v
+        }
+    };
+    out.parse().unwrap()
+}
+
+pub fn errors_macro(input: TokenStream) -> TokenStream {
+    let input = input.to_string();
+    let tt = parse_token_trees(&input).unwrap();
+    let static_errors = get_list_static_path(tt, "");
+    let q = static_errors.into_iter().map(quote::Ident::from)
+        .map(|x| {
+            quote! {
+                v.push(::rocket::Catcher::new(
+                    #x::code(),
+                    #x::handler
+                ));
+            }
+        });
+    let out = quote! {
+        {
+            let mut v = Vec::new();
+            #(#q)*
             v
         }
     };

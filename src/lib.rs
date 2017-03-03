@@ -149,6 +149,10 @@ pub fn routes(input: TokenStream) -> TokenStream {
     macros::routes_macro(input)
 }
 
+#[proc_macro]
+pub fn errors(input: TokenStream) -> TokenStream {
+    macros::errors_macro(input)
+}
 
 #[proc_macro_derive(FromForm)]
 pub fn from_form(input: TokenStream) -> TokenStream {
