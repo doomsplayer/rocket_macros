@@ -107,6 +107,7 @@ extern crate result;
 mod errors;
 mod utils;
 mod decorators;
+mod macros;
 
 use proc_macro::TokenStream;
 
@@ -142,6 +143,11 @@ export_decorators!(
     // TODO: Allow this once Diesel incompatibility is fixed. Fix docs too.
     // "options" => options_decorator
 );
+
+#[proc_macro]
+pub fn routes(input: TokenStream) -> TokenStream {
+    macros::routes_macro(input)
+}
 
 
 #[proc_macro_derive(FromForm)]

@@ -4,7 +4,7 @@ use quote::{ToTokens, Tokens};
 pub struct ContentTypeWrapper(pub ContentType);
 impl ToTokens for ContentTypeWrapper {
     fn to_tokens(&self, buf: &mut Tokens) {
-        let (top, sub) = (&*self.0.ttype, &*self.0.subtype);
+        let (top, sub) = (&*self.0.ttype.string, &*self.0.subtype.string);
         let tokens = quote! {
             ::rocket::http::ContentType {
                 ttype: ::std::borrow::Cow::Borrowed(#top),

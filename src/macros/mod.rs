@@ -1,6 +1,9 @@
-use {ROUTE_STRUCT_PREFIX, CATCH_STRUCT_PREFIX};
-use utils::{sep_by_tok, ParserExt, IdentExt};
+use {ROUTE_STRUCT_PREFIX};
+use proc_macro::TokenStream;
+use syn::{parse_token_trees, TokenTree, Token};
+use quote;
 
+/*
 use syntax::codemap::Span;
 use syntax::tokenstream::TokenTree;
 use syntax::ast::{Path, Expr};
@@ -58,4 +61,79 @@ pub fn errors(ecx: &mut ExtCtxt, sp: Span, args: &[TokenTree])
     prefixing_vec_macro(CATCH_STRUCT_PREFIX, |ecx, path| {
         quote_expr!(ecx, rocket::Catcher::from(&$path))
     }, ecx, sp, args)
+}
+*/
+
+fn get_list_static_routes(input: Vec<TokenTree>) -> Vec<String> {
+    let mut path : String = String::default();
+    let mut current    = String::default();
+    let mut static_routes = vec![];
+
+    for x in input {
+        let q = match x {
+            TokenTree::Delimited(_) => panic!("Unsupported TokenTree::Delimited"),
+            TokenTree::Token(x) => x,
+        };
+
+        match q {
+            Token::Ident(x) => {
+                current = x.to_string();
+                println!("Debug: routes::token::ident {}", current);
+            },
+            Token::ModSep => {
+                if path.is_empty() {
+                    path = current;
+                } else {
+                    let x = format!("{}::{}", path, current);
+                    path = x;
+                }
+                current = String::default();
+                println!("Debug: routes::token::modsep {}", path);
+            },
+            Token::Comma => {
+                let x = format!("{}{}", ROUTE_STRUCT_PREFIX, current);
+                if path.is_empty() {
+                    static_routes.push(x);
+                } else {
+                    let y = format!("{}::{}", path, x);
+                    println!("Debug: routes::token::comma {}", y);
+                    static_routes.push(y);
+                }
+                path = String::default();
+                current = String::default();
+            },
+            _ => panic!("Unexpected token in routes macro"),
+        }
+    }   
+
+    if !current.is_empty() {
+        let x = format!("{}{}", ROUTE_STRUCT_PREFIX, current);
+        if path.is_empty() {
+            static_routes.push(x);
+        } else {
+            let y = format!("{}::{}", path, x);
+            println!("Debug: routes::token::comma {}", y);
+            static_routes.push(y);
+        }
+    }
+
+    static_routes
+}
+
+pub fn routes_macro(input: TokenStream) -> TokenStream {
+    let input = input.to_string();
+    let tt = parse_token_trees(&input)
+        .unwrap();
+
+    let static_routes = get_list_static_routes(tt);
+    let q = static_routes.into_iter().map(quote::Ident::from).collect::<Vec<_>>();
+
+    let out = quote! {
+        {
+            let mut v = Vec::new();
+            #(v.push((&#q).into());)*
+            v
+        }
+    };
+    out.parse().unwrap()
 }

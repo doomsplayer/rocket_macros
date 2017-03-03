@@ -15,7 +15,7 @@ build = "build.rs"
 proc-macro = true
 
 [dependencies]
-rocket = { version = "0.1.6" }
+rocket = { version = "0.2.2" }
 log = "^0.3"
 syn = { version = "0.11", features = ["full", "parsing", "printing"] }
 quote = "0.3"
